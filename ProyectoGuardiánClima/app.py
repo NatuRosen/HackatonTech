@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # ==============================================================================
-#  GuardiánClima ITBA - Versión 1.0
+#  GuardiánClima ITBA - Versión 2.0 (Estable)
 #  Proyecto Integrador
 # ==============================================================================
 #
@@ -12,14 +12,6 @@
 #  - Estadísticas de uso.
 #  - Consejo de vestimenta por IA (Google Gemini).
 #
-#  Para ejecutar:
-#  1. Instalar las librerías necesarias:
-#     pip install requests google-generativeai
-#
-#  2. Configurar las API Keys en las siguientes constantes:
-#     - OPENWEATHER_API_KEY
-#     - GEMINI_API_KEY
-#
 # ==============================================================================
 
 import csv
@@ -29,26 +21,56 @@ import requests
 import google.generativeai as genai
 from datetime import datetime
 from collections import Counter
+from dotenv import load_dotenv
 
-# --- CONFIGURACIÓN DE API KEYS ---
-# ¡IMPORTANTE! Reemplazar con tus propias claves API.
-OPENWEATHER_API_KEY = "6c444f6b4dbeab835f5ec48e70463b08"
-GEMINI_API_KEY = "AIzaSyAh3HljDHn8KtMmLrNgQZ9lXEFXcvH-gG4"
+# ==============================================================================
+#  Carga de Variables de Entorno y Configuración
+# ==============================================================================
+
+# 1. Obtenemos la ruta absoluta a la carpeta donde se encuentra este script (app.py)
+script_dir = os.path.dirname(os.path.abspath(__file__))
+
+# 2. Creamos la ruta completa hacia el archivo .env
+dotenv_path = os.path.join(script_dir, '.env')
+
+# 3. Le decimos a load_dotenv que cargue ESE archivo en particular
+was_loaded = load_dotenv(dotenv_path=dotenv_path)
+
+# --- CONFIGURACIÓN DE API KEYS (desde .env) ---
+OPENWEATHER_API_KEY = os.environ.get("OPENWEATHER_API_KEY")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+
+# --- BLOQUE DE DIAGNÓSTICO ---
+print("--- Diagnóstico de Carga de API Keys ---")
+if was_loaded:
+    print("[OK] Se encontró y procesó el archivo .env.")
+else:
+    print("[FATAL] No se pudo encontrar el archivo .env en la ruta esperada.")
+    print(f"       Ruta buscada: {dotenv_path}")
+
+if OPENWEATHER_API_KEY:
+    print("[OK] La variable OPENWEATHER_API_KEY fue cargada.")
+else:
+    print("[ERROR] No se encontró la variable OPENWEATHER_API_KEY dentro del archivo .env.")
+
+if GEMINI_API_KEY:
+    print("[OK] La variable GEMINI_API_KEY fue cargada.")
+else:
+    print("[ERROR] No se encontró la variable GEMINI_API_KEY dentro del archivo .env.")
+print("----------------------------------------\n")
 
 # --- Constantes y Configuración Global ---
 NOMBRE_ARCHIVO_USUARIOS = "usuarios_simulados.csv"
 NOMBRE_ARCHIVO_HISTORIAL = "historial_global.csv"
 
 # Configuración de la API de IA (Gemini)
+model = None
 try:
-    if GEMINI_API_KEY != "TU_API_KEY_AQUI_GEMINI":
+    if GEMINI_API_KEY:
         genai.configure(api_key=GEMINI_API_KEY)
         model = genai.GenerativeModel('models/gemini-1.5-flash-latest')
-    else:
-        model = None
 except Exception as e:
     print(f"[ADVERTENCIA] No se pudo configurar la API de Gemini. Error: {e}")
-    model = None
 
 
 # ==============================================================================
@@ -78,6 +100,7 @@ def validar_contrasena(contrasena):
 def usuario_existe(nombre_usuario):
     """Verifica si un nombre de usuario ya está registrado."""
     try:
+        # CORRECCIÓN: Se eliminó el error de tipeo 'utf-t-8' a 'utf-8'
         with open(NOMBRE_ARCHIVO_USUARIOS, mode='r', newline='', encoding='utf-8') as f:
             reader = csv.DictReader(f)
             for fila in reader:
@@ -155,14 +178,14 @@ def get_clima(ciudad):
     """
     [CLOUD/CONECTIVIDAD] Obtiene datos del clima desde la API de OpenWeatherMap.
     """
-    if OPENWEATHER_API_KEY == "TU_API_KEY_AQUI_OPENWEATHERMAP":
-        print("\n[ERROR] La API key de OpenWeatherMap no está configurada.")
+    if not OPENWEATHER_API_KEY:
+        print("\n[ERROR] La API key de OpenWeatherMap no está configurada. Revisa el archivo .env y el diagnóstico inicial.")
         return None
     
     url = f"http://api.openweathermap.org/data/2.5/weather?q={ciudad}&appid={OPENWEATHER_API_KEY}&units=metric&lang=es"
     try:
         response = requests.get(url)
-        response.raise_for_status()  # Lanza un error para respuestas 4xx/5xx
+        response.raise_for_status()
         return response.json()
     except requests.exceptions.HTTPError as e:
         if e.response.status_code == 404:
@@ -184,7 +207,7 @@ def guardar_en_historial(usuario, ciudad, data):
         data['main']['temp'],
         data['weather'][0]['description'],
         data['main']['humidity'],
-        data['wind']['speed'] * 3.6  # Convertir m/s a km/h
+        data['wind']['speed'] * 3.6
     ]
     with open(NOMBRE_ARCHIVO_HISTORIAL, mode='a', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
@@ -221,9 +244,8 @@ def ver_historial_personal(usuario_logueado):
     try:
         with open(NOMBRE_ARCHIVO_HISTORIAL, mode='r', newline='', encoding='utf-8') as f:
             reader = csv.reader(f)
-            next(reader) # Omitir cabecera
+            next(reader)
             for fila in reader:
-                # Formato: [Usuario, Ciudad, Fecha, Temp, Cond, Hum, Viento]
                 if fila[0] == usuario_logueado and fila[1].lower() == ciudad.lower():
                     print(f"  - Fecha: {fila[2]}, Temp: {fila[3]}°C, Condición: {fila[4].capitalize()}")
                     encontrado = True
@@ -247,16 +269,13 @@ def mostrar_estadisticas_globales():
                 print("El historial está vacío. No se pueden calcular estadísticas.")
                 return
 
-            # 1. Número total de consultas
             total_consultas = len(datos)
             print(f"Número total de consultas: {total_consultas}")
 
-            # 2. Ciudad más consultada
             ciudades = [fila[1] for fila in datos]
             ciudad_mas_consultada = Counter(ciudades).most_common(1)[0]
             print(f"Ciudad más consultada: {ciudad_mas_consultada[0]} ({ciudad_mas_consultada[1]} veces)")
 
-            # 3. Temperatura promedio
             temperaturas = [float(fila[3]) for fila in datos]
             temp_promedio = sum(temperaturas) / len(temperaturas)
             print(f"Temperatura promedio registrada: {temp_promedio:.1f}°C")
@@ -271,8 +290,7 @@ def obtener_consejo_vestimenta(usuario_logueado):
     [INTELIGENCIA ARTIFICIAL] Opción 4: Usa Gemini para dar consejos de vestimenta.
     """
     if not model:
-        print("\n[ERROR] La funcionalidad de IA no está disponible.")
-        print("Verifica la configuración de la API Key de Gemini al inicio del script.")
+        print("\n[ERROR] La funcionalidad de IA no está disponible. Revisa el diagnóstico inicial.")
         return
 
     print("\n--- Consejo IA: ¿Cómo Me Visto Hoy? ---")
@@ -283,7 +301,6 @@ def obtener_consejo_vestimenta(usuario_logueado):
 
     data = get_clima(ciudad)
     if data:
-        # Preparamos el prompt para la IA
         temp = data['main']['temp']
         condicion = data['weather'][0]['description']
         humedad = data['main']['humidity']
@@ -391,13 +408,12 @@ def menu_principal(usuario_logueado):
             mostrar_acerca_de()
         elif opcion == '6':
             print("\nCerrando sesión...")
-            break # Rompe el bucle y vuelve al menú de acceso
+            break
         else:
             print("\nOpción no válida. Por favor, elija una opción del 1 al 6.")
 
 def menu_acceso():
     """Muestra el menú de acceso inicial."""
-    # Inicialización de archivos
     inicializar_archivo(NOMBRE_ARCHIVO_USUARIOS, ['username', 'password_simulada'])
     inicializar_archivo(NOMBRE_ARCHIVO_HISTORIAL, [
         'NombreDeUsuario', 'Ciudad', 'FechaHora', 'Temperatura_C', 
