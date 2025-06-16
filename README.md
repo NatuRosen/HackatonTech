@@ -23,7 +23,7 @@ OPENWEATHER_API_KEY = “ tu llave aquí ”
 Para las llaves de Gemini AI ir al enlace : https://aistudio.google.com/prompts/new_chat y registrase con su cuenta. Luego arriba a la derecha hay un botón que dice “Get API Key” / “Obtener la clave API” y reemplazarla en el código donde dice :  
 GEMINI_API_KEY = " tu llave aquí "
 Sexto paso : Ejecutar el programa 
-Una vez hecho todo lo anterior volver a la aplicación de Visual Studio Code o donde tengas la terminal con el código de app.py de Python y ejecutarlo. Para ejecutarlo hay que escribir en la terminal : python app.py 
+Una vez hecho todo lo anterior volver a la aplicación de Visual Studio Code y dentro de la aplicacion, arriba a la derecha donde dice "File"/"Archivo" ir a donde dicec abrir carpeta. Dentro de tus archivos en la seccion de documentos cliquear el archivo de HackatonTech y dentro del archivo de HackatonTech abrir el ProyectoGuardianClima. Para ejecutarlo hay que escribir en la terminal : python app.py o cliquear el boton de arriba a la derecha para ejecutarlo. 
 
 
 AUTORES : 
