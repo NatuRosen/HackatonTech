@@ -1,3 +1,4 @@
 NombreDeUsuario,Ciudad,FechaHora,Temperatura_C,Condicion_Clima,Humedad_Porcentaje,Viento_kmh
 natu,Paris,2025-06-15 19:34:03,15.97,cielo claro,69,11.124
 natu,Buenos Aires,2025-06-15 19:34:42,10.48,muy nuboso,71,45.072
+SantiR,Córdoba,2025-06-16 01:23:47,10.64,nubes,77,17.712
